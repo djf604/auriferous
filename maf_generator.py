@@ -28,47 +28,12 @@ def choose_variant_classification(effect_impact):
 
 def output_maf(maf_records, output_file=None):
     headers = ['gene', 'patient', 'Variant_Classification', 'Reference_Allele', 'Tumor_Seq_Allele1', 'chrom', 'pos']
-    # headers = [
-    #     'Hugo_Symbol',
-    #     'Entrez_Gene_Id',
-    #     'Center',
-    #     'NCBI_Build',
-    #     'Chromosome',
-    #     'Start_Position',
-    #     'End_Position',
-    #     'Strand',
-    #     'Variant_Classification',
-    #     'Variant_Type',
-    #     'Reference_Allele',
-    #     'Tumor_Seq_Allele1',
-    #     'Tumor_Seq_Allele2',
-    #     'dbSNP_RS',
-    #     'dbSNP_Val_Status',
-    #     'patient',
-    #     'Matched_Norm_Sample_Barcode',
-    #     'Match_Norm_Seq_Allele1',
-    #     'Match_Norm_Seq_Allele2',
-    #     'Tumor_Validation_Allele1',
-    #     'Tumor_Validation_Allele2',
-    #     'Match_Norm_Validation_Allele1',
-    #     'Match_Norm_Validation_Allele2',
-    #     'Verification_Status',
-    #     'Validation_Status',
-    #     'Mutation_Status',
-    #     'Sequencing_Phase',
-    #     'Sequence_Source',
-    #     'Validation_Method',
-    #     'Score',
-    #     'BAM_File',
-    #     'Sequencer',
-    #     'Tumor_Sample_UUID',
-    #     'Matched_Norm_Sample_UUID'
-    # ]
     if output_file:
         output_file.write('\t'.join(headers) + '\n')
     else:
         print '\t'.join(headers)
     for maf_record in maf_records:
+        maf_record = [elem if elem else 'NA' for elem in maf_record]
         full_maf_record = ['.'] * 34
         full_maf_record[0] = maf_record[0]
         full_maf_record[8] = maf_record[2]
