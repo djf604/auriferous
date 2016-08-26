@@ -19,7 +19,7 @@ POS = 1
 TYPE = 2
 WEAKREF = 3
 
-# BREAKPOINT_INTERVAL = 500
+BREAKPOINT_INTERVAL = 500
 
 
 def timed(func):
@@ -276,8 +276,8 @@ def filter_repetitive_regions(vcf_records, user_args):
 
     return list(passed_pos.intersection(passed_end))
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+
+def populate_parser(parser):
     parser.add_argument('--delly', required=True,
                         help='Path to VCF called by Delly (or the main VCF, but Delly format is assumed).')
     parser.add_argument('--lumpy',
@@ -303,7 +303,13 @@ if __name__ == '__main__':
     moe_group.add_argument('--sv-types', nargs='*', default='INV',
                            help=('Structural variant types that the filter will examine. ' +
                                  'SV types not listed will always pass the filter.'))
-    user_args = vars(parser.parse_args())
+
+
+def main(user_args=None):
+    if not user_args:
+        parser = argparse.ArgumentParser()
+        populate_parser(parser)
+        user_args = vars(parser.parse_args())
 
     BREAKPOINT_INTERVAL = user_args['breakpoint_window'] / 2
 
@@ -355,3 +361,6 @@ if __name__ == '__main__':
     vcf_writer = vcf.Writer(open(user_args['output_prefix'] + '.vcf', 'w'), vcf_reader)
     for record in filtered_vcf_records:
         vcf_writer.write_record(record)
+
+if __name__ == '__main__':
+    main()

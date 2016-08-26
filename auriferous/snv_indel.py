@@ -10,6 +10,28 @@ from collections import namedtuple
 from copy import copy
 import json
 
+# Define constants and VcfRecord named tuple
+VCF_CHROMOSOME = 0
+VCF_POSITION = 1
+VCF_REFERENCE = 3
+VCF_ALTERNATE = 4
+
+FIRST_CHAR = 0
+
+VcfRecord = namedtuple('VcfRecord', ['chromosome', 'position', 'reference', 'alternate'])
+
+program_description = """
+This program filters a variant call format (VCF) file through any of 4 filtering steps:
+    (1) Intersection with another VCF - Filters out all variants in the main VCF that are not in the
+        intersection VCF [--intersect-vcf]
+    (2) Remove non-canonical chromosomes and variant with multiple alternate alleles - Filters out
+        any variants that are not on chromosomes 1-22, X, or Y, as well as any variants that report having
+        more than one alternate allele [--keep-non-can-mult-alt skips this step]
+    (3) Panel of normals - Provided multiple VCFs of panels of normals, filters out any variants found in
+        any of those panels [--panel-normals]
+    (4) Repetitive regions - Filters variants found in regions denoted by a BED file (Dust Masker) [--regions-bed]
+        """
+
 
 def timed(func):
     """
@@ -214,32 +236,8 @@ def file_to_vcf_set(filepath):
                 raise
     return vcf_set
 
-if __name__ == '__main__':
-    # Define constants and VcfRecord named tuple
-    VCF_CHROMOSOME = 0
-    VCF_POSITION = 1
-    VCF_REFERENCE = 3
-    VCF_ALTERNATE = 4
 
-    FIRST_CHAR = 0
-
-    VcfRecord = namedtuple('VcfRecord', ['chromosome', 'position', 'reference', 'alternate'])
-
-    # Instantiate and populate ArgumentParser
-    program_description = """
-This program filters a variant call format (VCF) file through any of 4 filtering steps:
-    (1) Intersection with another VCF - Filters out all variants in the main VCF that are not in the
-        intersection VCF [--intersect-vcf]
-    (2) Remove non-canonical chromosomes and variant with multiple alternate alleles - Filters out
-        any variants that are not on chromosomes 1-22, X, or Y, as well as any variants that report having
-        more than one alternate allele [--keep-non-can-mult-alt skips this step]
-    (3) Panel of normals - Provided multiple VCFs of panels of normals, filters out any variants found in
-        any of those panels [--panel-normals]
-    (4) Repetitive regions - Filters variants found in regions denoted by a BED file (Dust Masker) [--regions-bed]
-    """
-
-    parser = argparse.ArgumentParser(prog='Variant Filter', description=program_description,
-                                     formatter_class=RawDescriptionHelpFormatter)
+def populate_parser(parser):
     parser.add_argument('--main-vcf', required=True,
                         help='VCF file that will be filtered.')
     parser.add_argument('--intersect-vcf',
@@ -254,8 +252,15 @@ This program filters a variant call format (VCF) file through any of 4 filtering
     parser.add_argument('--outfiles-prefix', default=datetime.now().strftime('%d%b%Y_%H%M%S'),
                         help='Output prefix for output files, including the final filtered VCF.')
 
-    # Get command line arguments from the user
-    user_args = vars(parser.parse_args())
+
+def main(user_args=None):
+    if not user_args:
+        parser = argparse.ArgumentParser(prog='Variant Filter', description=program_description,
+                                         formatter_class=RawDescriptionHelpFormatter)
+        populate_parser(parser)
+
+        # Get command line arguments from the user
+        user_args = vars(parser.parse_args())
 
     # Constitute a variants set from the main VCF file
     main_variants = file_to_vcf_set(user_args['main_vcf'])
@@ -291,3 +296,6 @@ This program filters a variant call format (VCF) file through any of 4 filtering
 
     except TypeError:
         print('No filtering took place.')
+
+if __name__ == '__main__':
+    main()
