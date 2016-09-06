@@ -13,6 +13,7 @@ setup(
     entry_points={
         'console_scripts': ['auri = auriferous:execute_from_command_line']
     },
+    install_requires=['PyVCF'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
