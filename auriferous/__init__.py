@@ -4,7 +4,7 @@ from argparse import RawDescriptionHelpFormatter
 import maf_generator
 import snv_indel
 
-from auriferous import structural
+from auriferous import structural, mutsig_maf_generator
 
 snv_indel_program_description = """
 This program filters a variant call format (VCF) file through any of 4 filtering steps:
@@ -26,7 +26,8 @@ def execute_from_command_line():
     subprograms = [
         (structural, 'struct', None),
         (snv_indel, 'snv-indel', snv_indel_program_description),
-        (maf_generator, 'maf-gen', None)
+        (maf_generator, 'maf-gen', None),
+        (mutsig_maf_generator, 'mutsigmaf-gen', None)
     ]
 
     for module, name, description in subprograms:
