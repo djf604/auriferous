@@ -2,13 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='Auriferous',
-    version='0.1.0',
+    version='0.1.1',
     description='Variant filtering tools',
     license='MIT',
     author='Dominic Fitzgerald',
     author_email='dominicfitzgerald11@gmail.com',
     url='https://github.com/djf604/auriferous',
-    download_url='https://github.com/djf604/chunky-pipes/tarball/0.2.3',
     packages=find_packages(),
     entry_points={
         'console_scripts': ['auri = auriferous:execute_from_command_line']
