@@ -250,7 +250,12 @@ def main(user_args=None):
             pos = int(variant.pos)
             trinuc_spread = slice(pos - 2, pos + 1)
             chrom = variant.chrom if 'chr' in variant.chrom else 'chr' + variant.chrom
-            trinuc_context = str(genome[chrom][trinuc_spread])
+            try:
+                trinuc_context = str(genome[chrom][trinuc_spread])
+            except KeyError:
+                sys.stderr.write('Categ could not be determined. Skipped record:\n')
+                sys.stderr.write(str(variant) + '\n')
+                continue
 
             variant_categ = discover_categ(trinuc_context, variant.alt, categ_map)
             if not variant_categ:
