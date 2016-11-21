@@ -121,7 +121,9 @@ def main(user_args=None):
                     }
                     effects_per_gene = defaultdict(lambda: copy(effect_impact))
                     for annot in vep_annotations:
-                        effects_per_gene[annot[VCF_GENE]].get(annot[VCF_IMPACT].strip(), 'LOW').append(annot)
+                        (effects_per_gene[annot[VCF_GENE]]
+                         .get(annot[VCF_IMPACT].strip(), effects_per_gene['LOW'])
+                         .append(annot))
 
                     for gene in effects_per_gene.keys():
                         effects_per_gene[gene] = choose_variant_classification(effects_per_gene[gene])
