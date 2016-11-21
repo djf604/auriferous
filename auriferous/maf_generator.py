@@ -1,6 +1,8 @@
 import re
 import argparse
 import os
+from collections import defaultdict
+from copy import copy
 
 ########
 # This version reports all consequences without duplicates as a comma separated list in the
@@ -13,6 +15,10 @@ ALT_INDEX = 4
 VCF_GENE = 3
 VCF_IMPACT = 2
 VCF_CONSEQUENCE = 1
+CHROM = 0
+POS = 1
+
+
 
 AMBIGUOUS_CSQ = ['splice_region_variant', 'coding_sequence_variant']
 
@@ -27,7 +33,8 @@ def choose_variant_classification(effect_impact):
 
 
 def output_maf(maf_records, output_file=None):
-    headers = ['gene', 'patient', 'Variant_Classification', 'Reference_Allele', 'Tumor_Seq_Allele1', 'chrom', 'pos']
+    headers = ('gene patient Variant_Classification Reference_Allele '
+               'Tumor_Seq_Allele1 chrom pos duplicate').split()
     if output_file:
         output_file.write('\t'.join(headers) + '\n')
     else:
@@ -107,6 +114,19 @@ def main(user_args=None):
                         if vep_code + '=' in vep_token
                     ]).split(',')]
 
+                    effect_impact = {
+                        'HIGH': [],
+                        'MODERATE': [],
+                        'LOW': []
+                    }
+                    effects_per_gene = defaultdict(lambda: copy(effect_impact))
+                    for annot in vep_annotations:
+                        effects_per_gene[annot[VCF_GENE]].get(annot[VCF_IMPACT].strip(), 'LOW').append(annot)
+
+                    for gene in effects_per_gene.keys():
+                        effects_per_gene[gene] = choose_variant_classification(effects_per_gene[gene])
+
+
                     # Get gene column
                     vcf_gene = vep_annotations[FIRST][VCF_GENE]
 
@@ -114,27 +134,34 @@ def main(user_args=None):
                     vcf_patient = os.path.dirname(vcf_file.strip())
 
                     # Get effect column
-                    effect_impact = {
-                        'HIGH': [],
-                        'MODERATE': [],
-                        'LOW': []
-                    }
-                    for vep_annot in vep_annotations:
-                        if vep_annot[VCF_IMPACT].strip() == 'HIGH':
-                            effect_impact['HIGH'].append(vep_annot)
-                        elif vep_annot[VCF_IMPACT].strip() == 'MODERATE':
-                            effect_impact['MODERATE'].append(vep_annot)
-                        else:
-                            effect_impact['LOW'].append(vep_annot)
+
+                    # for vep_annot in vep_annotations:
+                    #     if vep_annot[VCF_IMPACT].strip() == 'HIGH':
+                    #         effect_impact['HIGH'].append(vep_annot)
+                    #     elif vep_annot[VCF_IMPACT].strip() == 'MODERATE':
+                    #         effect_impact['MODERATE'].append(vep_annot)
+                    #     else:
+                    #         effect_impact['LOW'].append(vep_annot)
 
                     # Choose what should go into the Variant_Classification column
-                    vcf_effect = choose_variant_classification(effect_impact)
+                    # vcf_effect = choose_variant_classification(effect_impact)
 
                     # Get Reference_Allele and Tumor_Seq_Allele1
                     reference_allele = vcf_record[REF_INDEX]
                     tumor_seq_allele1 = vcf_record[ALT_INDEX]
 
-                    maf_records.append([vcf_gene, vcf_patient, vcf_effect, reference_allele, tumor_seq_allele1, vcf_record[0], vcf_record[1]])
+                    for i, gene in enumerate(effects_per_gene):
+                        maf_records.append([
+                            gene,
+                            vcf_patient,
+                            effects_per_gene[gene],
+                            reference_allele, tumor_seq_allele1,
+                            vcf_record[CHROM],
+                            vcf_record[POS],
+                            str(int(i > 0))
+                        ])
+
+                    #maf_records.append([vcf_gene, vcf_patient, vcf_effect, reference_allele, tumor_seq_allele1, vcf_record[0], vcf_record[1]])
 
     output_maf_file = open(user_args['output'], 'w') if user_args['output'] else None
     output_maf(maf_records, output_maf_file)
