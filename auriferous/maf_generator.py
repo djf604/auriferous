@@ -34,12 +34,12 @@ def output_maf(maf_records, output_file=None):
         print '\t'.join(headers)
     for maf_record in maf_records:
         maf_record = [elem if elem else 'NA' for elem in maf_record]
-        full_maf_record = ['.'] * 34
-        full_maf_record[0] = maf_record[0]
-        full_maf_record[8] = maf_record[2]
-        full_maf_record[10] = maf_record[3]
-        full_maf_record[11] = maf_record[4]
-        full_maf_record[16] = maf_record[1]
+        # full_maf_record = ['.'] * 34
+        # full_maf_record[0] = maf_record[0]
+        # full_maf_record[8] = maf_record[2]
+        # full_maf_record[10] = maf_record[3]
+        # full_maf_record[11] = maf_record[4]
+        # full_maf_record[16] = maf_record[1]
         if output_file:
             output_file.write('\t'.join(maf_record) + '\n')
         else:
