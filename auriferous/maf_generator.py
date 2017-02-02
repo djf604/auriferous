@@ -23,6 +23,9 @@ VEP_ANNOT_TRANSCRIPT_ID = 6
 VEP_ANNOT_PROTEIN_POSITION = 14
 VEP_ANNOT_AMINO_ACIDS = 15
 
+FORMAT_FIRST_COL_TUMOR = 0
+FORMAT_FIRST_COL_NORMAL = 1
+
 
 def choose_variant_classification(effect_impact):
     # Flatten effect_impact into a single dictionary
@@ -34,7 +37,8 @@ def choose_variant_classification(effect_impact):
 
 def output_maf(maf_records, output_file=None):
     headers = ('gene patient Variant_Classification Reference_Allele '
-               'Tumor_Seq_Allele1 chrom pos duplicate Coding_change').split()
+               'Tumor_Seq_Allele1 chrom pos duplicate Coding_change '
+               'DP_tumor FA_tumor DP_normal FA_normal').split()
     if output_file:
         output_file.write('\t'.join(headers) + '\n')
     else:
@@ -73,6 +77,7 @@ def main(user_args=None):
 
     maf_records = []
 
+
     # Load gene longest transcript dictionary into memory
     gene_longest_transcript = defaultdict(lambda: None)
     with open(user_args['longest_transcript_dict']) as longest_transcript_dict:
@@ -81,6 +86,9 @@ def main(user_args=None):
             gene_longest_transcript[gene] = transcript
 
     for vcf_file in vcf_file_list:
+        tumor_col_index = None
+        normal_col_index = None
+
         vcf_reader = vcf.Reader(open(vcf_file))
         for record in vcf_reader:
             if VEP_INFO_CODE not in record.INFO:
@@ -145,6 +153,22 @@ def main(user_args=None):
             for gene in effects_map.keys():
                 effects_map[gene] = choose_variant_classification(effects_map[gene])
 
+            # Get minor allele fraction and approximate read depth
+            calls = record.samples
+            if tumor_col_index is None:
+                if '/' in calls[0].data.GT:
+                    # First column is tumor, index 0
+                    tumor_col_index = 0
+                else:
+                    # First column is normal, so second column is tumor, index 1
+                    tumor_col_index = 1
+                normal_col_index = tumor_col_index - 1
+
+            dp_tumor = calls[tumor_col_index].data.DP
+            fa_tumor = calls[tumor_col_index].data.FA
+            dp_normal = calls[normal_col_index].data.DP
+            fa_normal = calls[normal_col_index].data.FA
+
             for i, gene in enumerate(effects_map):
                 maf_records.append([
                     gene,                    # Gene name
@@ -155,7 +179,11 @@ def main(user_args=None):
                     record.CHROM,       # Chromosome for this mutation
                     str(record.POS),         # Position for this mutation
                     str(int(i > 0)),         # 0 if first record, 1 otherwise
-                    coding_change_map[gene]  # Coding change, if any
+                    coding_change_map[gene],  # Coding change, if any
+                    str(dp_tumor),
+                    str(fa_tumor),
+                    str(dp_normal),
+                    str(fa_normal)
                 ])
 
     output_maf_file = open(user_args['output'], 'w') if user_args['output'] else None
