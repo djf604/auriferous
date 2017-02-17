@@ -42,13 +42,13 @@ def output_maf(maf_records, output_file=None):
     if output_file:
         output_file.write('\t'.join(headers) + '\n')
     else:
-        print '\t'.join(headers)
+        print('\t'.join(headers))
     for maf_record in maf_records:
         maf_record = [elem if elem else 'NA' for elem in maf_record]
         if output_file:
             output_file.write('\t'.join(maf_record) + '\n')
         else:
-            print '\t'.join(maf_record)
+            print('\t'.join(maf_record))
 
 
 def populate_parser(parser):
@@ -77,7 +77,6 @@ def main(user_args=None):
 
     maf_records = []
 
-
     # Load gene longest transcript dictionary into memory
     gene_longest_transcript = defaultdict(lambda: None)
     with open(user_args['longest_transcript_dict']) as longest_transcript_dict:
@@ -90,9 +89,14 @@ def main(user_args=None):
         normal_col_index = None
 
         vcf_reader = vcf.Reader(open(vcf_file))
+        # print('Infos for {}: {}\n'.format(vcf_file, vcf_reader.infos))
+        # del vcf_reader.infos['COVSTATE']
         for record in vcf_reader:
+            # print record.INFO
             if VEP_INFO_CODE not in record.INFO:
-                raise KeyError('{} not in INFO column'.format(VEP_INFO_CODE))
+                # print record.INFO
+                # raise KeyError('{} not in INFO column: {}'.format(VEP_INFO_CODE, vcf_file))
+                continue
 
             # Pull information from VCF record
             annotations = [annot.split('|') for annot in record.INFO[VEP_INFO_CODE]]
@@ -164,10 +168,19 @@ def main(user_args=None):
                     tumor_col_index = 1
                 normal_col_index = tumor_col_index - 1
 
+            # Populate columns for variant allele fraction and read depth
             dp_tumor = calls[tumor_col_index].data.DP
-            fa_tumor = calls[tumor_col_index].data.FA
             dp_normal = calls[normal_col_index].data.DP
-            fa_normal = calls[normal_col_index].data.FA
+
+            try:
+                vaf_tumor = calls[tumor_col_index].data.FA
+            except AttributeError:
+                vaf_tumor = '{0:.5f}'.format(calls[1].data.AD[1] / float(calls[1].data.DP))
+
+            try:
+                vaf_normal = calls[normal_col_index].data.FA
+            except AttributeError:
+                vaf_normal = '{0:.5f}'.format(calls[0].data.AD[1] / float(calls[0].data.DP))
 
             for i, gene in enumerate(effects_map):
                 maf_records.append([
@@ -181,9 +194,9 @@ def main(user_args=None):
                     str(int(i > 0)),         # 0 if first record, 1 otherwise
                     coding_change_map[gene],  # Coding change, if any
                     str(dp_tumor),
-                    str(fa_tumor),
+                    str(vaf_tumor[0]) if type(vaf_tumor) == list else str(vaf_tumor),
                     str(dp_normal),
-                    str(fa_normal)
+                    str(vaf_normal[0]) if type(vaf_normal) == list else str(vaf_normal)
                 ])
 
     output_maf_file = open(user_args['output'], 'w') if user_args['output'] else None
