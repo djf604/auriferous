@@ -71,7 +71,7 @@ def main(user_args=None):
 
     if user_args['vcfs_file']:
         with open(user_args['vcfs_file']) as vcfs_file:
-            vcf_file_list = vcfs_file.readlines()
+            vcf_file_list = [v.strip() for v in vcfs_file.readlines()]
     else:
         vcf_file_list = user_args['vcfs']
 
